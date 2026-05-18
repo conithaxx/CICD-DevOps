@@ -1,4 +1,4 @@
-name: CI/CD Tienda Perritos - Backend
+name: CI/CD Tienda Perritos - Backend 1
 
 on:
   push:
@@ -17,9 +17,9 @@ jobs:
     - name: Configurar credenciales AWS
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID1 }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY1 }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN1 }}
         aws-region: "us-east-1"
 
     - name: Login en Amazon ECR (runner)
@@ -29,21 +29,22 @@ jobs:
       run: |
         cd backend
         docker build -t tienda-backend .
-        docker tag tienda-backend:latest ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-        docker push ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+        docker tag tienda-backend:latest ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:latest
+        docker push ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:latest
 
     - name: Desplegar Backend vía SSM
       run: |
         aws ssm send-command \
-          --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
+          --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID1 }} \
           --document-name "AWS-RunShellScript" \
           --comment "Actualizar tienda-backend desde ECR" \
           --parameters '{"commands":[
             "set -e",
-            "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-            "docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest",
+            "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com",
+            "docker pull ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:latest",
             "docker stop tienda-backend || true",
             "docker rm tienda-backend || true",
-            "docker run -d --name tienda-backend -p 3001:3001 ${{ secrets.ECR_REPO_URL_BACKEND }}:latest"
+            "docker run -d --name tienda-backend -p 3001:3001 ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:latest"
           ]}' \
+          --region us-east-1 \
           --output text
