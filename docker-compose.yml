@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  frontend:
+    build: ./frontend
+    container_name: tienda-frontend
+    ports:
+      - "3434:8080"
+    networks:
+      - tienda-network
+    depends_on:
+      - backend
+
+  backend:
+    build: ./backend
+    container_name: tienda-backend
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: admin123
+      DB_NAME: tienda_perritos
+      DB_PORT: 3306
+    networks:
+      - tienda-network
+    depends_on:
+      - db
+
+  db:
+    build: ./db
+    container_name: tienda-db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123
+      MYSQL_DATABASE: tienda_perritos
+    volumes:
+      - dbdata:/var/lib/mysql # <- PERSISTENCIA EXIGIDA POR LA PAUTA
+    networks:
+      - tienda-network
+
+volumes:
+  dbdata:
+    # Named volume nativo de Docker para asegurar la continuidad de datos
+
+networks:
+  tienda-network:
+    driver: bridge
