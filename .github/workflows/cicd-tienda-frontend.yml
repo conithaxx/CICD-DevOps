@@ -17,9 +17,9 @@ jobs:
     - name: Configurar credenciales AWS
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID1 }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY1 }}
+        aws-session-token: ${{ secrets.AWS_SESSION_TOKEN1 }}
         aws-region: "us-east-1"
 
     - name: Login en Amazon ECR (runner)
@@ -29,21 +29,22 @@ jobs:
       run: |
         cd frontend
         docker build -t tienda-frontend .
-        docker tag tienda-frontend:latest ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
-        docker push ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
+        docker tag tienda-frontend:latest ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:latest
+        docker push ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:latest
 
     - name: Desplegar Frontend vía SSM
       run: |
         aws ssm send-command \
-          --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID }} \
+          --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID1 }} \
           --document-name "AWS-RunShellScript" \
           --comment "Actualizar tienda-frontend desde ECR" \
           --parameters '{"commands":[
             "set -e",
-            "aws ecr get-login-password --region '${{ secrets.AWS_REGION }}' | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}",
-            "docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest",
+            "aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com",
+            "docker pull ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:latest",
             "docker stop tienda-frontend || true",
             "docker rm tienda-frontend || true",
-            "docker run -d --name tienda-frontend -p 80:8080 ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest"
+            "docker run -d --name tienda-frontend -p 80:8080 ${{ secrets.ECR_REGISTRY1 }}.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:latest"
           ]}' \
+          --region us-east-1 \
           --output text
